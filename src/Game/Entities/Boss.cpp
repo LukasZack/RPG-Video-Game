@@ -1,0 +1,127 @@
+#include "Boss.h"
+
+Boss::Boss(string id, int health, int baseDamage, string entityName, int ox, int oy) : Enemy( ox, oy, 60, 8, 1000, 1000, false, false, health, baseDamage, "boss", false) {
+    this->id = id;
+    this->baseDamage = baseDamage;
+    this->health = health;
+    this->entityName = entityName;
+    vector<ofImage> downFrames;
+    vector<ofImage> upFrames;
+    vector<ofImage> leftFrames;
+    vector<ofImage> rightFrames;
+    ofImage sprite;
+    ofImage temp;
+
+    sprite.load("images/entities/enemy/sprite.png");
+
+    int w = 48, h = 48;
+    
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            temp.cropFrom(sprite, 6 + w * i, h * j, w - 12, h);
+            if (j == 0)
+                downFrames.push_back(temp);
+            else if (j == 1)
+                leftFrames.push_back(temp);
+            else if (j == 2)
+                rightFrames.push_back(temp);
+            else
+                upFrames.push_back(temp);
+        }   
+    } 
+    
+    walkDown = new Animation(3, downFrames);
+    walkUp = new Animation(3, upFrames);
+    walkLeft = new Animation(3, leftFrames);
+    walkRight = new Animation(3, rightFrames);
+    fighting = new Animation(7, leftFrames);
+
+    direction = Direction::right;
+
+}
+
+void Boss::inOverworldUpdate() {
+    if (moveTimer == 60) {
+        walking = true;
+        switch (direction) {
+            case Direction::left:
+                direction = Direction::up;
+                break;
+            case Direction::right:
+                direction = Direction::down;
+                break;
+            case Direction::up:
+                direction = Direction::right;
+                break;
+            case Direction::down:
+                direction = Direction::left;
+                break;
+        }
+    }
+    if (moveTimer == 45) {
+        walking = false;
+    }
+    moveTimer--;
+    if (moveTimer == 0) moveTimer = 60;
+
+    if (walking) {
+        switch (direction) {
+            case Direction::left:
+                this->ox -= speed;
+                walkLeft->update();
+                overworldSprite = walkLeft->getCurrentFrame();
+                break;
+            case Direction::right:
+                this->ox += speed;
+                walkRight->update();
+                overworldSprite = walkRight->getCurrentFrame();
+                break;
+            case Direction::up:
+                this->oy -= speed;
+                walkUp->update();
+                overworldSprite = walkUp->getCurrentFrame();
+                break;
+            case Direction::down:
+                this->oy += speed;
+                walkDown->update();
+                overworldSprite = walkDown->getCurrentFrame();
+                break;
+        }
+    } else {
+        switch (direction) {
+            case Direction::left:
+                overworldSprite = walkLeft->getCurrentFrame();
+                break;
+            case Direction::right:
+                overworldSprite = walkRight->getCurrentFrame();;
+                break;
+            case Direction::up:
+                overworldSprite = walkUp->getCurrentFrame();
+                break;
+            case Direction::down:
+                overworldSprite = walkDown->getCurrentFrame();
+                break;
+        }
+    }
+}
+
+void Boss::inOverworldDraw() {
+    overworldSprite.draw(renderX, renderY, ow, oh);
+}
+
+void Boss::fightingUpdate() {
+    fightingSprite = fighting->getCurrentFrame();
+    fighting->update();
+}
+
+void Boss::reset() {
+    unSpawn();
+}
+
+Boss::~Boss() {
+    delete walkUp;
+    delete walkDown;
+    delete walkLeft;
+    delete walkRight;
+    delete fighting;
+}
